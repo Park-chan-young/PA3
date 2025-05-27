@@ -6,17 +6,20 @@
 # You should submit Initial depth and refined depth image as npy files !!!!
 # Write your name and student ID below
 
-# Student ID: 
-# Name:
+# Student ID: 20251155
+# Name: 박찬영 (Park Chanyoung)
 
 
 #### Libraries ####
-
-
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
 
 
 ############# Step 1 #############
 def hole_filling(sparse_depth):
+    
     pass
     # Todo
     
