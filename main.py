@@ -78,5 +78,13 @@ Loss = alpha * Loss_Normal + beta * Loss_sparse
 
 ############# Step 4 #############
 
+def main():
+    ######## sSettings ###########
+    pass
 
+
+
+if __name__ == '__main__':
+    main()   
+    
 
