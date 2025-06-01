@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 파일 경로
-sparse_path = "./data/data_example/normal.npy"
+sparse_path = "./data/data_example/sparse_depth.npy"
 
 # .npy 파일 불러오기
 sparse_depth = np.load(sparse_path)

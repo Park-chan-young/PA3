@@ -15,6 +15,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+import os
+from PIL import Image
 
 
 ############# Step 1 #############
@@ -80,6 +82,38 @@ Loss = alpha * Loss_Normal + beta * Loss_sparse
 
 def main():
     ######## sSettings ###########
+    example_path = './data/data_example'
+    submission_path = './data/data_submission'
+    rgb_path = os.path.join(example_path, 'rgb.png')
+    sparse_depth_path = os.path.join(example_path, 'sparse_depth.npy')
+    normal_path = os.path.join(example_path, 'normal.npy')
+    gt_path = os.path.join(example_path, 'gt.npy')
+    
+    inf_rgb_path = os.path.join(submission_path, 'rgb.png')
+    inf_sparse_path = os.path.join(submission_path, 'sparse_depth.npy')
+    inf_normal_path = os.path.join(submission_path, 'normal.npy')
+    
+    rgb = Image.open(rgb_path).convert('RGB')
+    rgb = np.array(rgb).astype(np.float32) / 255.0
+    rgb = torch.from_numpy(rgb).permute(2, 0, 1)
+    
+    sparse_depth = np.load(sparse_depth_path)
+    sparse_depth = torch.from_numpy(sparse_depth).unsqueeze(0).type(float)
+    normal = np.load(normal_path)
+    normal = torch.from_numpy(normal).permute(2, 0, 1).float()
+    
+    gt = np.load(gt_path)
+    gt = torch.from_numpy(gt).unsqueeze(0).float()
+    
+    inf_rgb = Image.open(inf_rgb_path).convert('RGB')
+    inf_rgb = np.array(inf_rgb).astype(np.float32) / 255.0
+    inf_rgb = torch.from_numpy(inf_rgb).permute(2, 0, 1)
+
+    inf_sparse_depth = np.load(inf_sparse_path)
+    inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(float)
+    inf_normal = np.load(inf_normal_path)
+    inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()    
+    
     pass
 
 
