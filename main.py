@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import torch
 import os
 from PIL import Image
-import torch.nn.functional as F
+import torch.nn as nn
+from HoleFilling import hole_filling 
 
 # ############# Step 1 #############
 # def hole_filling(sparse_depth):
