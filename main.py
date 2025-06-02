@@ -17,13 +17,13 @@ import matplotlib.pyplot as plt
 import torch
 import os
 from PIL import Image
+import torch.nn.functional as F
 
+# ############# Step 1 #############
+# def hole_filling(sparse_depth):
 
-############# Step 1 #############
-def hole_filling(sparse_depth):
-    
-    pass
-    # Todo
+#     pass
+#     # Todo
     
 ############# Step 1 #############
 
