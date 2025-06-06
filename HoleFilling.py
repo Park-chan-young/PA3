@@ -30,8 +30,8 @@ import torch.nn as nn
 #     return fill_depth
 
 def hole_filling(sparse_depth): #using torch.nn
-    kernel_size = 5
-    cnt_inter = 8
+    kernel_size = 7
+    cnt_inter = 10
     device =sparse_depth.device
     
     inital_depth = sparse_depth.clone()

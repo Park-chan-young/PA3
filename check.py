@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 파일 경로
-sparse_path = "./output/temp_depth.npy"
+sparse_path = "./output/inital_depth.npy"
 
 # .npy 파일 불러오기
 sparse_depth = np.load(sparse_path)
@@ -16,8 +16,8 @@ print(sparse_depth)
 # 이미지로 저장
 plt.imshow(sparse_depth, cmap='viridis')
 plt.colorbar()
-plt.title("Sparse Depth")
-plt.savefig("sparse_sub.png")
+plt.title("inital Depth")
+plt.savefig("inital_depth.png")
 
 
 # # # 1. Load normal.npy
