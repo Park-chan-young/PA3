@@ -72,10 +72,10 @@ def depth_2_normal(depth):
 
 # Traing UNet 
 
-Loss_Normal = None
-Loss_sparse = None
-alpha, beta = None, None
-Loss = alpha * Loss_Normal + beta * Loss_sparse
+# Loss_Normal = None
+# Loss_sparse = None
+# alpha, beta = None, None
+# Loss = alpha * Loss_Normal + beta * Loss_sparse
 
 
 
@@ -99,7 +99,7 @@ def main():
     rgb = torch.from_numpy(rgb).permute(2, 0, 1)
     
     sparse_depth = np.load(sparse_depth_path)
-    sparse_depth = torch.from_numpy(sparse_depth).unsqueeze(0).type(float)
+    sparse_depth = torch.from_numpy(sparse_depth).unsqueeze(0).type(torch.float32)
     normal = np.load(normal_path)
     normal = torch.from_numpy(normal).permute(2, 0, 1).float()
     
@@ -111,12 +111,18 @@ def main():
     inf_rgb = torch.from_numpy(inf_rgb).permute(2, 0, 1)
 
     inf_sparse_depth = np.load(inf_sparse_path)
-    inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(float)
+    inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(torch.float32)
     inf_normal = np.load(inf_normal_path)
     inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()    
     
-    pass
-
+    output_path = './output'
+    os.makedirs(output_path, exist_ok= True)
+    
+    
+    inital_tensor = hole_filling(sparse_depth)
+    
+    inital_depth = inital_tensor.squeeze().cpu().numpy()
+    np.save(os.path.join(output_path, 'inital_depth.npy'), inital_depth)
 
 
 if __name__ == '__main__':

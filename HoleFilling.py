@@ -6,7 +6,6 @@ import os
 from PIL import Image
 import torch.nn as nn
 
-
 # def hole_filling(sparse_depth): # using torch.nn.functional
 #     kernel_size = 5
 #     cnt_inter = 8
@@ -30,15 +29,13 @@ import torch.nn as nn
             
 #     return fill_depth
 
-#     # Todo
-
 def hole_filling(sparse_depth): #using torch.nn
     kernel_size = 5
     cnt_inter = 8
     device =sparse_depth.device
     
-    fill_depth = sparse_depth.clone()
-    fill_depth = fill_depth.unsqueeze(0).type(torch.float32)
+    inital_depth = sparse_depth.clone()
+    inital_depth = inital_depth.unsqueeze(0).type(torch.float32) #(1, 1, H, W)
     padding = (kernel_size-1)//2
     
     #평균용 conv 구하기
@@ -49,15 +46,15 @@ def hole_filling(sparse_depth): #using torch.nn
     
     for _ in range(cnt_inter):
         
-        sumed_depth = avg_conv(fill_depth)
+        sumed_depth = avg_conv(inital_depth)
         
-        cnt_mask = (fill_depth > 0).type(torch.float32)
+        cnt_mask = (inital_depth > 0).type(torch.float32)
         cnt_depth = avg_conv(cnt_mask)
         
         avg_depth = sumed_depth/ (cnt_depth + 1e-6)
         
-        fill_depth = torch.where((fill_depth == 0) & (cnt_depth > 0), avg_depth, fill_depth)
+        inital_depth = torch.where((inital_depth == 0) & (cnt_depth > 0), avg_depth, inital_depth)
         
-    return fill_depth
+    return inital_depth
 
     
