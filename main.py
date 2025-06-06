@@ -19,6 +19,7 @@ import os
 from PIL import Image
 import torch.nn as nn
 from HoleFilling import hole_filling 
+from unet_model import UNet
 
 # ############# Step 1 #############
 # def hole_filling(sparse_depth):
@@ -44,16 +45,16 @@ from HoleFilling import hole_filling
 
 
 
-############# Step 2 #############
-UNet = None
+# ############# Step 2 #############
+# UNet = None
 
-############# Step 2 #############
-
-
+# ############# Step 2 #############
 
 
 
-############# Step 3 #############
+
+
+# ############# Step 3 #############
 def depth_2_normal(depth):
     pass
     # Todo
@@ -120,9 +121,18 @@ def main():
     
     
     inital_tensor = hole_filling(sparse_depth)
-    
     inital_depth = inital_tensor.squeeze().cpu().numpy()
-    np.save(os.path.join(output_path, 'inital_depth.npy'), inital_depth)
+    
+    # np.save(os.path.join(output_path, 'inital_depth.npy'), inital_depth)
+    
+    unet_input = torch.cat([rgb, inital_tensor.squeeze(0)], dim=0)
+    model = UNet()
+    unet_input = unet_input.unsqueeze(0)
+    
+    with torch.no_grad():
+        predicted_depth = model(unet_input) #출력 shape: (1, 1, H, W)
+        predicted_depth = predicted_depth.squeeze().cpu().numpy()
+
 
 
 if __name__ == '__main__':
