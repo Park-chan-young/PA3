@@ -20,6 +20,7 @@ from PIL import Image
 import torch.nn as nn
 from HoleFilling import hole_filling 
 from unet_model import UNet
+from Depth2Normal import depth_2_normal
 
 # ############# Step 1 #############
 # def hole_filling(sparse_depth):
@@ -55,13 +56,13 @@ from unet_model import UNet
 
 
 # ############# Step 3 #############
-def depth_2_normal(depth):
-    pass
-    # Todo
+# def depth_2_normal(depth):
+#     pass
+#     # Todo
 
-    # Intrinsic matrix
-    # f_x, f_y = 5.1885790117450188e+02, 5.1946961112127485e+02
-    # c_x, c_y = 3.2558244941119034e+02, 2.5373616633400465e+02
+#     # Intrinsic matrix
+#     # f_x, f_y = 5.1885790117450188e+02, 5.1946961112127485e+02
+#     # c_x, c_y = 3.2558244941119034e+02, 2.5373616633400465e+02
 
 ############# Step 3 #############
 
@@ -105,7 +106,7 @@ def main():
     normal = torch.from_numpy(normal).permute(2, 0, 1).float()
     
     gt = np.load(gt_path)
-    gt = torch.from_numpy(gt).unsqueeze(0).float()
+    gt = torch.from_numpy(gt).unsqueeze(0).type(torch.float32)
     
     inf_rgb = Image.open(inf_rgb_path).convert('RGB')
     inf_rgb = np.array(inf_rgb).astype(np.float32) / 255.0
@@ -131,7 +132,15 @@ def main():
     
     with torch.no_grad():
         predicted_depth = model(unet_input) #출력 shape: (1, 1, H, W)
-        predicted_depth = predicted_depth.squeeze().cpu().numpy()
+        predicted_depth_np = predicted_depth.squeeze().cpu().numpy() #중간 결과 확인용
+
+    gt = gt.unsqueeze(0)    
+    
+    predicted_normal = depth_2_normal(gt) #depth_2_normal (1, 3, H, W)
+    predicted_normal_np = predicted_normal.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    np.save(os.path.join(output_path, 'predicted_normal.npy'), predicted_normal_np)
+
+
 
 
 
