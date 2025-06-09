@@ -12,19 +12,6 @@ from torch.utils.data import DataLoader
 from data_loading import PA3Dataset
 import torch.nn.functional as F
 
-# class DepthDataset(Dataset):
-#     def __init__(self, rgb_path, sparse_path, gt_path, normal_path):
-#         self.rgb = torch.from_numpy(np.array(Image.open(rgb_path)).astype(np.float32) / 255.0).permute(2, 0, 1)
-#         self.sparse = torch.from_numpy(np.load(sparse_path)).unsqueeze(0).float()
-#         self.gt = torch.from_numpy(np.load(gt_path)).unsqueeze(0).float()
-#         self.normal = torch.from_numpy(np.load(normal_path)).permute(2, 0, 1).float()
-
-#     def __len__(self):
-#         return 1  # Single example
-
-#     def __getitem__(self, idx):
-#         return self.rgb, self.sparse, self.gt, self.normal
-
 def normal_l2_loss(pred, gt):
     return ((pred - gt) ** 2).mean()
 
@@ -51,8 +38,8 @@ def train():
     model = UNet().cuda()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-    alpha = 0.01  # sparse loss weight
-    beta = 1.0   # normal loss weight
+    alpha = 1.0  # sparse loss weight
+    beta = 0.5   # normal loss weight
 
     num_epochs = 500
     model.train()
