@@ -87,62 +87,79 @@ from Depth2Normal import depth_2_normal
 
 def main():
     ######## sSettings ###########
-    example_path = './data/data_example'
-    submission_path = './data/data_submission'
-    rgb_path = os.path.join(example_path, 'rgb.png')
-    sparse_depth_path = os.path.join(example_path, 'sparse_depth.npy')
-    normal_path = os.path.join(example_path, 'normal.npy')
-    gt_path = os.path.join(example_path, 'gt.npy')
+    # example_path = './data/data_example'
+    # submission_path = './data/data_submission'
+    # rgb_path = os.path.join(example_path, 'rgb.png')
+    # sparse_depth_path = os.path.join(example_path, 'sparse_depth.npy')
+    # normal_path = os.path.join(example_path, 'normal.npy')
+    # gt_path = os.path.join(example_path, 'gt.npy')
     
-    inf_rgb_path = os.path.join(submission_path, 'rgb.png')
-    inf_sparse_path = os.path.join(submission_path, 'sparse_depth.npy')
-    inf_normal_path = os.path.join(submission_path, 'normal.npy')
+    # inf_rgb_path = os.path.join(submission_path, 'rgb.png')
+    # inf_sparse_path = os.path.join(submission_path, 'sparse_depth.npy')
+    # inf_normal_path = os.path.join(submission_path, 'normal.npy')
     
-    rgb = Image.open(rgb_path).convert('RGB')
-    rgb = np.array(rgb).astype(np.float32) / 255.0
-    rgb = torch.from_numpy(rgb).permute(2, 0, 1)
+    # rgb = Image.open(rgb_path).convert('RGB')
+    # rgb = np.array(rgb).astype(np.float32) / 255.0
+    # rgb = torch.from_numpy(rgb).permute(2, 0, 1)
     
-    sparse_depth = np.load(sparse_depth_path)
-    sparse_depth = torch.from_numpy(sparse_depth).unsqueeze(0).type(torch.float32)
-    normal = np.load(normal_path)
-    normal = torch.from_numpy(normal).permute(2, 0, 1).float()
+    # sparse_depth = np.load(sparse_depth_path)
+    # sparse_depth = torch.from_numpy(sparse_depth).unsqueeze(0).type(torch.float32)
+    # normal = np.load(normal_path)
+    # normal = torch.from_numpy(normal).permute(2, 0, 1).float()
     
-    gt = np.load(gt_path)
-    gt = torch.from_numpy(gt).unsqueeze(0).type(torch.float32)
+    # gt = np.load(gt_path)
+    # gt = torch.from_numpy(gt).unsqueeze(0).type(torch.float32)
     
-    inf_rgb = Image.open(inf_rgb_path).convert('RGB')
-    inf_rgb = np.array(inf_rgb).astype(np.float32) / 255.0
-    inf_rgb = torch.from_numpy(inf_rgb).permute(2, 0, 1)
+    # inf_rgb = Image.open(inf_rgb_path).convert('RGB')
+    # inf_rgb = np.array(inf_rgb).astype(np.float32) / 255.0
+    # inf_rgb = torch.from_numpy(inf_rgb).permute(2, 0, 1)
 
-    inf_sparse_depth = np.load(inf_sparse_path)
-    inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(torch.float32)
-    inf_normal = np.load(inf_normal_path)
-    inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()  
+    # inf_sparse_depth = np.load(inf_sparse_path)
+    # inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(torch.float32)
+    # inf_normal = np.load(inf_normal_path)
+    # inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()  
     
     
-    # #data_loading    
-    # dataset = PA3Dataset('./data/data_exaple')
-    # loader = DataLoader(dataset, batch_size = 1, shuffle = False)
+    #data_loading    
+    dataset = PA3Dataset('./data/data_example')
+    loader = DataLoader(dataset, batch_size = 1, shuffle = False)
     
-    # for batch in loader:
-    #     rgb = batch['rgb']
-    #     sparse = batch['sparse_depth']
-    #     normal = batch['normal']
+    for batch in loader:
+        rgb = batch['rgb']
+        sparse = batch['sparse_depth']
+        normal = batch['normal']
 
-      
+    rgb = rgb.squeeze(0).cuda()
+    sparse = sparse.squeeze(0).cuda()
+    normal = normal.squeeze(0).cuda()
+    init_depth = hole_filling(sparse)
+    init_depth_np = init_depth.squeeze().cpu().numpy()
+    np.save('./output/inital_depth.npy', init_depth_np)
+    unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda()
+
     
-    output_path = './output'
-    os.makedirs(output_path, exist_ok= True)
+    model = UNet().cuda()
+    model.load_state_dict(torch.load('./output/unet_trained.pth'))
+    model.eval()
+    
+    with torch.no_grad():
+        pre_depth = model(unet_input) #(1, 1, H, W)
+
+    refined_depth = pre_depth.squeeze().cpu().numpy() #(H, W)
+    np.save('./output/final_refine_depth.npy', refined_depth)
+    
+    # output_path = './output'
+    # os.makedirs(output_path, exist_ok= True)
     
     
-    inital_tensor = hole_filling(sparse_depth)
+    # inital_tensor = hole_filling(sparse_depth)
     # inital_depth = inital_tensor.squeeze().cpu().numpy()
     
     # np.save(os.path.join(output_path, 'inital_depth.npy'), inital_depth)
     
-    unet_input = torch.cat([rgb, inital_tensor.squeeze(0)], dim=0)
-    model = UNet()
-    unet_input = unet_input.unsqueeze(0)
+    # unet_input = torch.cat([rgb, inital_tensor.squeeze(0)], dim=0)
+    # model = UNet()
+    # unet_input = unet_input.unsqueeze(0)
     
     # with torch.no_grad():
     #     predicted_depth = model(unet_input) #출력 shape: (1, 1, H, W) 
@@ -150,9 +167,9 @@ def main():
 
     # gt = gt.unsqueeze(0)    
     
-    predicted_normal = depth_2_normal(predicted_depth) #depth_2_normal (1, 3, H, W)
-    predicted_normal_np = predicted_normal.squeeze(0).permute(1, 2, 0).cpu().numpy()
-    np.save(os.path.join(output_path, 'predicted_normal.npy'), predicted_normal_np)
+    # predicted_normal = depth_2_normal(predicted_depth) #depth_2_normal (1, 3, H, W)
+    # predicted_normal_np = predicted_normal.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    # np.save(os.path.join(output_path, 'predicted_normal.npy'), predicted_normal_np)
 
 
 
