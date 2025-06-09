@@ -18,6 +18,8 @@ import torch
 import os
 from PIL import Image
 import torch.nn as nn
+from torch.utils.data import DataLoader
+from data_loading import PA3Dataset
 from HoleFilling import hole_filling 
 from unet_model import UNet
 from Depth2Normal import depth_2_normal
@@ -115,14 +117,26 @@ def main():
     inf_sparse_depth = np.load(inf_sparse_path)
     inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(torch.float32)
     inf_normal = np.load(inf_normal_path)
-    inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()    
+    inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()  
+    
+    
+    # #data_loading    
+    # dataset = PA3Dataset('./data/data_exaple')
+    # loader = DataLoader(dataset, batch_size = 1, shuffle = False)
+    
+    # for batch in loader:
+    #     rgb = batch['rgb']
+    #     sparse = batch['sparse_depth']
+    #     normal = batch['normal']
+
+      
     
     output_path = './output'
     os.makedirs(output_path, exist_ok= True)
     
     
     inital_tensor = hole_filling(sparse_depth)
-    inital_depth = inital_tensor.squeeze().cpu().numpy()
+    # inital_depth = inital_tensor.squeeze().cpu().numpy()
     
     # np.save(os.path.join(output_path, 'inital_depth.npy'), inital_depth)
     
@@ -130,13 +144,13 @@ def main():
     model = UNet()
     unet_input = unet_input.unsqueeze(0)
     
-    with torch.no_grad():
-        predicted_depth = model(unet_input) #출력 shape: (1, 1, H, W)
-        predicted_depth_np = predicted_depth.squeeze().cpu().numpy() #중간 결과 확인용
+    # with torch.no_grad():
+    #     predicted_depth = model(unet_input) #출력 shape: (1, 1, H, W) 
+    #     predicted_depth_np = predicted_depth.squeeze().cpu().numpy() #중간 결과 확인용
 
-    gt = gt.unsqueeze(0)    
+    # gt = gt.unsqueeze(0)    
     
-    predicted_normal = depth_2_normal(gt) #depth_2_normal (1, 3, H, W)
+    predicted_normal = depth_2_normal(predicted_depth) #depth_2_normal (1, 3, H, W)
     predicted_normal_np = predicted_normal.squeeze(0).permute(1, 2, 0).cpu().numpy()
     np.save(os.path.join(output_path, 'predicted_normal.npy'), predicted_normal_np)
 
