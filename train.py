@@ -10,6 +10,7 @@ from HoleFilling import hole_filling
 from Depth2Normal import depth_2_normal
 from torch.utils.data import DataLoader
 from data_loading import PA3Dataset
+import torch.nn.functional as F
 
 # class DepthDataset(Dataset):
 #     def __init__(self, rgb_path, sparse_path, gt_path, normal_path):
@@ -50,8 +51,8 @@ def train():
     model = UNet().cuda()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-    alpha = 1.0  # sparse loss weight
-    beta = 0.5   # normal loss weight
+    alpha = 0.01  # sparse loss weight
+    beta = 1.0   # normal loss weight
 
     num_epochs = 500
     model.train()
@@ -71,6 +72,7 @@ def train():
         # Loss_normal
         pred_normal = depth_2_normal(pred_depth)
         loss_normal = normal_l2_loss(pred_normal, normal.unsqueeze(0).cuda())
+        
 
         # Total loss
         loss = alpha * loss_sparse + beta * loss_normal
