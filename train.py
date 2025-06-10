@@ -43,8 +43,8 @@ def depth_train():
     model = UNet().cuda()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-    alpha = 1.0  # sparse loss weight
-    beta = 0.5  # normal loss weight
+    alpha = 10.0  # sparse loss weight
+    beta = 0.01  # normal loss weight
 
     num_epochs = 500
     model.train()
@@ -53,7 +53,11 @@ def depth_train():
     normal = normal.squeeze(0).cuda()
     init_depth =hole_filling(sparse)
     unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda() #(4, H, W)
-
+    
+    log_file = open("train_log.txt", "w")
+    log = f"alpha: {alpha}, beta: {beta}"
+    print(log)
+    log_file.write(log + "\n")
     for epoch in range(num_epochs):
         pred_depth = model(unet_input)  # (1, 1, H, W)
 
@@ -71,9 +75,16 @@ def depth_train():
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        
+        
         if epoch % 50 == 0 or epoch == num_epochs - 1:
-            print(f"Epoch [{epoch}/{num_epochs}], Loss: {loss.item():.4f}")
+            # print(f"Epoch [{epoch}/{num_epochs}], Loss: {loss.item():.4f}")
+            log = f"Epoch [{epoch}/{num_epochs}], Loss: {loss.item():.4f}"
+            print(log)
+            log_file.write(log + "\n")
+            
+    log_file.close()
+
     
     output_path = './output'
     os.makedirs(output_path, exist_ok= True)
