@@ -51,7 +51,7 @@ def depth_train():
         alpha = 1.0  # sparse loss weight
         beta = 0.0  # normal loss weight
 
-        num_epochs = 1000
+        num_epochs = 100
         model.train()
         rgb = rgb.squeeze(0).cuda()
         sparse = sparse.squeeze(0).cuda()
@@ -59,7 +59,7 @@ def depth_train():
         init_depth =hole_filling(sparse)
         # init_depth_norm = torch.norm(init_depth, dim = 0, keepdim = True) + 1e-8
         # init_depth = init_depth / init_depth_norm
-        unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda() #(4, H, W)
+        unet_input = torch.cat([init_depth.squeeze(0), rgb], dim=0).unsqueeze(0).cuda() #(4, H, W)
         
         log_file = open("train_log.txt", "w")
         log = f"alpha: {alpha}, beta: {beta}"

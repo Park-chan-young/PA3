@@ -137,7 +137,7 @@ def main():
         np.save('./output/inital_depth.npy', init_depth_np)
         # init_depth_norm = torch.norm(init_depth, dim = 0, keepdim = True) + 1e-8
         # init_depth = init_depth / init_depth_norm
-        unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda()
+        unet_input = torch.cat([init_depth.squeeze(0), rgb], dim=0).unsqueeze(0).cuda()
 
 
         
