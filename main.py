@@ -129,24 +129,27 @@ def main():
         sparse = batch['sparse_depth']
         normal = batch['normal']
 
-    rgb = rgb.squeeze(0).cuda()
-    sparse = sparse.squeeze(0).cuda()
-    normal = normal.squeeze(0).cuda()
-    init_depth = hole_filling(sparse)
-    init_depth_np = init_depth.squeeze().cpu().numpy()
-    np.save('./output/inital_depth.npy', init_depth_np)
-    unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda()
+        rgb = rgb.squeeze(0).cuda()
+        sparse = sparse.squeeze(0).cuda()
+        normal = normal.squeeze(0).cuda()
+        init_depth = hole_filling(sparse)
+        init_depth_np = init_depth.squeeze().cpu().numpy()
+        np.save('./output/inital_depth.npy', init_depth_np)
+        # init_depth_norm = torch.norm(init_depth, dim = 0, keepdim = True) + 1e-8
+        # init_depth = init_depth / init_depth_norm
+        unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda()
 
-    
-    model = UNet().cuda()
-    model.load_state_dict(torch.load('./output/unet_trained.pth'))
-    model.eval()
-    
-    with torch.no_grad():
-        unet_input = unet_input.cuda()
-        pre_depth = model(unet_input) #(1, 1, H, W)
-        refined_depth = pre_depth.squeeze().cpu().numpy() #(H, W)
-        np.save('./output/final_refine_depth.npy', refined_depth)
+
+        
+        model = UNet().cuda()
+        model.load_state_dict(torch.load('./output/unet_trained.pth'))
+        model.eval()
+        
+        with torch.no_grad():
+            unet_input = unet_input.cuda()
+            pre_depth = model(unet_input) #(1, 1, H, W)
+            refined_depth = pre_depth.squeeze().cpu().numpy() #(H, W)
+            np.save('./output/final_refine_depth.npy', refined_depth)
     
     # output_path = './output'
     # os.makedirs(output_path, exist_ok= True)
