@@ -143,10 +143,10 @@ def main():
     model.eval()
     
     with torch.no_grad():
+        unet_input = unet_input.cuda()
         pre_depth = model(unet_input) #(1, 1, H, W)
-
-    refined_depth = pre_depth.squeeze().cpu().numpy() #(H, W)
-    np.save('./output/final_refine_depth.npy', refined_depth)
+        refined_depth = pre_depth.squeeze().cpu().numpy() #(H, W)
+        np.save('./output/final_refine_depth.npy', refined_depth)
     
     # output_path = './output'
     # os.makedirs(output_path, exist_ok= True)

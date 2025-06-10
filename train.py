@@ -15,7 +15,12 @@ import torch.nn.functional as F
 def normal_l2_loss(pred, gt):
     return ((pred - gt) ** 2).mean()
 
-def train():
+def normal_cosine_loss(pred, gt):
+    pred = F.normalize(pred, dim=1)
+    gt = F.normalize(gt, dim=1)
+    return 1 - (pred * gt).sum(dim=1).mean()
+
+def depth_train():
     # # Set paths
     # rgb_path = './data/data_example/rgb.png'
     # sparse_path = './data/data_example/sparse_depth.npy'
@@ -39,7 +44,7 @@ def train():
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
     alpha = 1.0  # sparse loss weight
-    beta = 0.5   # normal loss weight
+    beta = 0.5  # normal loss weight
 
     num_epochs = 500
     model.train()
@@ -59,8 +64,7 @@ def train():
         # Loss_normal
         pred_normal = depth_2_normal(pred_depth)
         loss_normal = normal_l2_loss(pred_normal, normal.unsqueeze(0).cuda())
-        
-
+        # loss_normal = normal_cosine_loss(pred_normal, normal.unsqueeze(0).cuda())
         # Total loss
         loss = alpha * loss_sparse + beta * loss_normal
 
@@ -70,8 +74,10 @@ def train():
 
         if epoch % 50 == 0 or epoch == num_epochs - 1:
             print(f"Epoch [{epoch}/{num_epochs}], Loss: {loss.item():.4f}")
-
+    
+    output_path = './output'
+    os.makedirs(output_path, exist_ok= True)
     torch.save(model.state_dict(), "./output/unet_trained.pth")
 
 if __name__ == '__main__':
-    train()
+    depth_train()
