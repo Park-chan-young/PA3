@@ -21,7 +21,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from data_loading import PA3Dataset
 from HoleFilling import hole_filling 
-from unet_model import UNet
+from unet_model_final import UNet
 from Depth2Normal import depth_2_normal
 
 # ############# Step 1 #############
@@ -126,26 +126,28 @@ def main():
     loader = DataLoader(dataset, batch_size = 1, shuffle = False)
     
     for batch in loader:
-        rgb = batch['rgb']
-        sparse = batch['sparse_depth']
-        normal = batch['normal']
+        rgb = batch['rgb'].cuda()
+        sparse = batch['sparse_depth'].cuda()
+        normal = batch['normal'].cuda()
+        ggt = batch['gt'].cuda()
 
         rgb = rgb.cuda()
         sparse = sparse.squeeze(0).cuda()
         normal = normal.squeeze(0).cuda()
-        init_depth = hole_filling(sparse) #(1, 1, H, W)
-        print(sparse.shape)
-        print(init_depth.shape)
+        init_depth = hole_filling(sparse).cuda() #(1, 1, H, W)
+     
+        # print(sparse.shape)
+        # print(init_depth.shape)
         init_depth_np = init_depth.squeeze().cpu().numpy()
         np.save('./output/inital_depth.npy', init_depth_np)
         # init_depth_norm = torch.norm(init_depth, dim = 0, keepdim = True) + 1e-8
         # init_depth = init_depth / init_depth_norm
-        unet_input = torch.cat([init_depth, rgb], dim=1)
+        unet_input = torch.cat([rgb, init_depth], dim=1)
         # print(unet_input.shape)
 
 
         
-        model = UNet().cuda()
+        model = UNet(in_channels=4, out_channels=1).cuda()
         model.load_state_dict(torch.load('./output/unet_trained.pth'))
         model.eval()
         

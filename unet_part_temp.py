@@ -50,4 +50,4 @@ class OutConv(nn.Module):
         self.conv = nn.Conv2d(in_ch, out_ch, kernel_size=1)
 
     def forward(self, x):
-        return torch.relu(self.conv(x))
+        return self.conv(x)

@@ -12,11 +12,12 @@ class PA3Dataset(Dataset):
         self.rgb_path = self.root_dir / 'rgb.png'
         self.sparse_depth_path = self.root_dir / 'sparse_depth.npy'
         self.normal_path = self.root_dir / 'normal.npy'
+        self.gt_path = self.root_dir / 'gt.npy'
         self.transform = transform
 
     def __len__(self):
         # 단일 샘플이므로 1
-        return 1
+        return 100
 
     def __getitem__(self, idx):
         # RGB image
@@ -32,10 +33,14 @@ class PA3Dataset(Dataset):
         normal = np.load(self.normal_path) 
         normal = torch.from_numpy(normal).permute(2, 0, 1).type(torch.float32) # (3, H, W)
 
+        gt = np.load(self.gt_path) 
+        gt = torch.from_numpy(gt).unsqueeze(0).type(torch.float32) #(1 ,H, W)
+
         sample = {
             'rgb': rgb,
             'sparse_depth': sparse_depth,
-            'normal': normal
+            'normal': normal,
+            'gt' : gt
         }
 
         if self.transform:

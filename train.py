@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 import os
-from unet_model import UNet
+from unet_model_final import UNet
 from HoleFilling import hole_filling
 from Depth2Normal import depth_2_normal
 from data_loading import PA3Dataset
@@ -22,7 +22,7 @@ def normal_cosine_loss(pred, gt):
     gt = F.normalize(gt, dim=1)
     return 1 - (pred * gt).sum(dim=1).mean()
 
-def depth_l1_loss(pred_d, sparse_d, weight=10.0):
+def depth_l1_loss(pred_d, sparse_d, weight=1.0):
     mask = (sparse_d > 0).float()
     diff = torch.abs(pred_d - sparse_d)
     
@@ -37,13 +37,13 @@ def depth_train():
     loader = DataLoader(dataset, batch_size=1, shuffle=False)
 
     # Model, optimizer
-    model = UNet().cuda()
+    model = UNet(in_channels=4, out_channels=1).cuda()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
     model.train()
 
-    alpha = 100.0  # sparse loss weight
-    beta = 1.0 # normal loss weight
-    num_epochs = 500
+    alpha = 1.0  # sparse loss weight
+    beta = 0.5 # normal loss weight
+    num_epochs = 50
 
     # Logging setup
     os.makedirs('./test_log', exist_ok=True)
@@ -57,9 +57,10 @@ def depth_train():
             rgb = batch['rgb'].cuda()
             sparse = batch['sparse_depth'].squeeze(0).cuda()
             normal = batch['normal'].cuda()
+            ggt = batch['gt'].cuda()
 
             init_depth = hole_filling(sparse)      # (1, 1, H, W)
-            unet_input = torch.cat([rgb, init_depth], dim=1)  # (1, 4, H, W)
+            unet_input = torch.cat([rgb,init_depth], dim=1)  # (1, 4, H, W)
 
             pred_depth = model(unet_input)  # (1, 1, H, W)
 
@@ -79,7 +80,7 @@ def depth_train():
             loss.backward()
             optimizer.step()
 
-        if epoch % 50 == 0 or epoch == num_epochs - 1:
+        if epoch % 1 == 0 or epoch == num_epochs - 1:
             log = f"Epoch [{epoch}/{num_epochs}], Loss: {epoch_loss:.4f}"
             print(log)
             log_file.write(log + "\n")
