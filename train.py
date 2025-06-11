@@ -12,17 +12,24 @@ from data_loading import PA3Dataset
 import torch.nn.functional as F
 
 def normal_l2_loss(pred, gt):
-    return ((pred - gt) ** 2).mean()
+    # (1, 3, H, W)
+    diff = (pred - gt) ** 2              # (1, 3, H, W)
+    l2_per_pixel = diff.sum(dim=1)       # (1, H, W), 벡터 L2 제곱합
+    return l2_per_pixel.mean()           # 전체 픽셀 평균
 
 def normal_cosine_loss(pred, gt):
     pred = F.normalize(pred, dim=1)
     gt = F.normalize(gt, dim=1)
     return 1 - (pred * gt).sum(dim=1).mean()
 
-def depth_l1_loss(pred_d, sparse_d):
+def depth_l1_loss(pred_d, sparse_d, weight=10.0):
     mask = (sparse_d > 0).float()
-    loss_sparse_ = (mask * torch.abs(pred_d - sparse_d)).sum() / (mask.sum() + 1e-6)
-    return loss_sparse_   
+    diff = torch.abs(pred_d - sparse_d)
+    
+    weighted_diff = weight * mask * diff + (1 - mask) * diff  # 유효한 픽셀만 강조
+    loss = weighted_diff.mean()
+    return loss
+
 
 def depth_train():
     # Load dataset
@@ -34,8 +41,8 @@ def depth_train():
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
     model.train()
 
-    alpha = 1.0  # sparse loss weight
-    beta = 0.5   # normal loss weight
+    alpha = 100.0  # sparse loss weight
+    beta = 1.0 # normal loss weight
     num_epochs = 500
 
     # Logging setup
@@ -47,21 +54,22 @@ def depth_train():
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         for batch in loader:
-            rgb = batch['rgb'].squeeze(0).cuda()
+            rgb = batch['rgb'].cuda()
             sparse = batch['sparse_depth'].squeeze(0).cuda()
-            normal = batch['normal'].squeeze(0).cuda()
+            normal = batch['normal'].cuda()
 
-            init_depth = hole_filling(sparse)  # (1, 1, H, W)
-            unet_input = torch.cat([rgb, init_depth.squeeze(0)], dim=0).unsqueeze(0).cuda()  # (1, 4, H, W)
+            init_depth = hole_filling(sparse)      # (1, 1, H, W)
+            unet_input = torch.cat([rgb, init_depth], dim=1)  # (1, 4, H, W)
 
             pred_depth = model(unet_input)  # (1, 1, H, W)
 
             # Loss_sparse
-            loss_sparse = depth_l1_loss(pred_depth, sparse.unsqueeze(0))
+            loss_sparse = depth_l1_loss(pred_depth, sparse.unsqueeze(0)) #(1, 1, 480, 640)
 
             # Loss_normal
-            pred_normal = depth_2_normal(pred_depth)
-            loss_normal = normal_l2_loss(pred_normal, normal.unsqueeze(0))
+            pred_normal = depth_2_normal(pred_depth) # pred_normal (1, 3, 480, 640)
+            # print(pred_normal.shape)
+            loss_normal = normal_l2_loss(pred_normal, normal) #(1, 3, 480, 640)
 
             # Total loss
             loss = alpha * loss_sparse + beta * loss_normal

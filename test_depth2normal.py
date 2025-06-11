@@ -30,16 +30,23 @@ def main():
     init_depth_np = init_depth.squeeze().cpu().numpy()
     
     gt_depth = np.load('./data/data_example/gt.npy') #(H, W)
+    # print(gt_depth.shape)
     gt = torch.from_numpy(gt_depth).unsqueeze(0).type(torch.float32) #(1, H, W)
-    
-    init_normal = depth_2_normal(init_depth) # (1, 3, H, W)
+    # print(gt.shape)
+    # init_normal = depth_2_normal(init_depth) # (1, 3, H, W)
     gt_normal = depth_2_normal(gt.unsqueeze(0)) # (1, 3, H, W)
     
-    init_normal_np = init_normal.squeeze().permute(1, 2, 0).cpu().numpy()
-    gt_normal_np = gt_normal.squeeze().permute(1, 2, 0).cpu().numpy()
+    # init_normal_np = init_normal.squeeze().permute(1, 2, 0).cpu().numpy()
+    gt_normal_np = gt_normal.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    print(gt_normal_np.shape)
+    # pred_normal_flipped = gt_normal_np * np.array([1, 1, 1])  # Z 축만 반전
     
+
+    output_path = './output'
+    os.makedirs(output_path, exist_ok= True)
+
     # np.save('./output/init_normal.npy', init_normal_np)
-    np.save('./output/gt_normal.npy', gt_normal_np)
+    np.save('./output/chk_normal.npy', gt_normal_np)
     
     
 if __name__ == '__main__':

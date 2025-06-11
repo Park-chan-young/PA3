@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
-
+import cv2
 
 class PA3Dataset(Dataset):
     def __init__(self, root_dir: str, transform=None):

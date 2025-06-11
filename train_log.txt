@@ -1,4 +1,0 @@
-alpha: 1.0, beta: 0.0
-Epoch [0/100], Loss: 1.7589
-Epoch [50/100], Loss: 0.0579
-Epoch [99/100], Loss: 0.0400

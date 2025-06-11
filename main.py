@@ -118,7 +118,8 @@ def main():
     # inf_sparse_depth = torch.from_numpy(inf_sparse_depth).unsqueeze(0).type(torch.float32)
     # inf_normal = np.load(inf_normal_path)
     # inf_normal = torch.from_numpy(inf_normal).permute(2, 0, 1).float()  
-    
+    output_path = './output'
+    os.makedirs(output_path, exist_ok= True)
     
     #data_loading    
     dataset = PA3Dataset('./data/data_example')
@@ -129,15 +130,18 @@ def main():
         sparse = batch['sparse_depth']
         normal = batch['normal']
 
-        rgb = rgb.squeeze(0).cuda()
+        rgb = rgb.cuda()
         sparse = sparse.squeeze(0).cuda()
         normal = normal.squeeze(0).cuda()
-        init_depth = hole_filling(sparse)
+        init_depth = hole_filling(sparse) #(1, 1, H, W)
+        print(sparse.shape)
+        print(init_depth.shape)
         init_depth_np = init_depth.squeeze().cpu().numpy()
         np.save('./output/inital_depth.npy', init_depth_np)
         # init_depth_norm = torch.norm(init_depth, dim = 0, keepdim = True) + 1e-8
         # init_depth = init_depth / init_depth_norm
-        unet_input = torch.cat([init_depth.squeeze(0), rgb], dim=0).unsqueeze(0).cuda()
+        unet_input = torch.cat([init_depth, rgb], dim=1)
+        # print(unet_input.shape)
 
 
         
