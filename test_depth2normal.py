@@ -38,7 +38,7 @@ def main():
     init_normal_np = init_normal.squeeze().permute(1, 2, 0).cpu().numpy()
     gt_normal_np = gt_normal.squeeze().permute(1, 2, 0).cpu().numpy()
     
-    np.save('./output/init_normal.npy', init_normal_np)
+    # np.save('./output/init_normal.npy', init_normal_np)
     np.save('./output/gt_normal.npy', gt_normal_np)
     
     

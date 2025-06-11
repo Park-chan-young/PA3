@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-pred = np.load('output/init_normal.npy')
+pred = np.load('output/predicted_normal.npy')
 gt = np.load('data/data_example/normal.npy')
 
 pred = torch.tensor(pred.reshape(-1, 3))
