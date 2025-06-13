@@ -17,12 +17,16 @@ def normal_l2_loss(pred, gt):
     l2_per_pixel = diff.sum(dim=1)       # (1, H, W), 벡터 L2 제곱합
     return l2_per_pixel.mean()           # 전체 픽셀 평균
 
-def normal_cosine_loss(pred, gt):
-    pred = F.normalize(pred, dim=1)
-    gt = F.normalize(gt, dim=1)
-    return 1 - (pred * gt).sum(dim=1).mean()
+def normal_cosine_loss(pred_normal, gt_normal):
+    # 정규화 이미 되어 있다고 가정
+    cos_sim = (pred_normal * gt_normal).sum(dim=1)  # (B, H, W)
 
-def depth_l1_loss(pred_d, sparse_d, weight=1.0):
+    # 유효 영역만 loss에 포함 (0 vector 등 제외)
+    valid_mask = (gt_normal.abs().sum(dim=1) > 0).float()
+    return (1 - cos_sim * valid_mask).sum() / (valid_mask.sum() + 1e-6)
+
+
+def depth_l1_loss(pred_d, sparse_d, weight=5.0):
     mask = (sparse_d > 0).float()
     diff = torch.abs(pred_d - sparse_d)
     
@@ -43,7 +47,7 @@ def depth_train():
 
     alpha = 1.0  # sparse loss weight
     beta = 0.5 # normal loss weight
-    num_epochs = 50
+    num_epochs = 100
 
     # Logging setup
     os.makedirs('./test_log', exist_ok=True)
@@ -70,7 +74,7 @@ def depth_train():
             # Loss_normal
             pred_normal = depth_2_normal(pred_depth) # pred_normal (1, 3, 480, 640)
             # print(pred_normal.shape)
-            loss_normal = normal_l2_loss(pred_normal, normal) #(1, 3, 480, 640)
+            loss_normal = normal_cosine_loss(pred_normal, normal) #(1, 3, 480, 640)
 
             # Total loss
             loss = alpha * loss_sparse + beta * loss_normal

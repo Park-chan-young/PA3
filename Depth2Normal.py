@@ -4,49 +4,42 @@ import os
 import numpy as np
 
 def depth_2_normal(depth):
-    """
-    depth shape (1, 1, H, W)
-    # Intrinsic matrix
-    # f_x, f_y = 5.1885790117450188e+02, 5.1946961112127485e+02
-    # c_x, c_y = 3.2558244941119034e+02, 2.5373616633400465e+02    
-    Convert depth map to surface normal map using K^{-1} projection.
-    """
 
+    # Intrinsic matrix 
+    # f_x, f_y = 5.1885790117450188e+02, 5.1946961112127485e+02
+    # c_x, c_y = 3.2558244941119034e+02, 2.5373616633400465e+02
+
+    f_x, f_y = 518.8579, 519.4696
+    c_x, c_y = 325.5824, 253.7362
+    
     output_path = './output/normal_chk'
     os.makedirs(output_path, exist_ok= True)    
-    
-    # print(depth.shape)
-    device = depth.device
-    B, _, H, W = depth.shape
-    assert B == 1, "Batch size 1 only supported"
-
-    # Step 1: Camera intrinsics
-    fx, fy = 518.8579, 519.4696
-    cx, cy = 325.5824, 253.7362
+    depth = depth.type(torch.float32).cuda()
+    # print(depth.shape) #(1, 1, H, W)
+    _, _, H, W = depth.shape
 
     # Camera intrinsic matrix
     K = torch.tensor([
-        [fx, 0, cx],
-        [0, fy, cy],
+        [f_x, 0, c_x],
+        [0, f_y, c_y],
         [0,  0,  1]
-    ], device=device)
+    ]).cuda()
 
-    K_inv = torch.inverse(K)  # (3, 3)
+    K_inv = torch.inverse(K)
 
-    # Step 2: Pixel grid (u, v)
-    y, x = torch.meshgrid(torch.arange(H, device=device),
-                          torch.arange(W, device=device), indexing='ij')
-    ones = torch.ones_like(x)
-    pixel_coords = torch.stack((x, y, ones), dim=0).reshape(3, -1).type(torch.float32)  # (3, H*W)
+    # D 좌표계로... 표현하기
+    x_cord  = torch.arange(W, device=depth.device).repeat(H, 1).type(torch.float32) * depth[0, 0]
+    # print(x_cord.shape)
+    y_cord = torch.arange(H, device=depth.device).unsqueeze(1).repeat(1, W).type(torch.float32) *depth[0 , 0]
+    # print(y_cord.shape)
+    z_cord = depth[0, 0] # z는 depth scale 값으로
+    pixel_coords = torch.stack((x_cord, y_cord, z_cord), dim=0).reshape(3, -1).type(torch.float32)  # 행렬곱으 위해, (3, H*W)
     # print(pixel_coords)
-    pixel_coords_np = pixel_coords.cpu().numpy()
+    # pixel_coords_np = pixel_coords.cpu().numpy()
     # np.save('./output/normal_chk/pixel_coord.npy', pixel_coords_np)
     
-
-    # Step 3: Back-project to camera space
     # print(depth[0, 0].shape)
-    depth_flat = depth[0, 0].reshape(-1)  # (H*W,)
-    cam_points = (K_inv @ pixel_coords) * depth_flat  # (3, H*W)
+    cam_points = K_inv @ pixel_coords # (3, H*W)
     # cam_points = (K_inv @ pixel_coords) 
     # print(cam_points)
     # cam_points_np = cam_points.cpu().numpy()
@@ -58,18 +51,17 @@ def depth_2_normal(depth):
     # cam_coords_np2 = cam_coords_np[:,:,2]
     # np.save('output/normal_chk/cam_coords.npy',cam_coords_np2)
     
-    # Step 4: Compute surface normals using central differences
-    cam_coords_padded = F.pad(cam_coords, (1, 1, 1, 1), mode='replicate')  # (3, H+2, W+2)
+    cam_coords_pad = F.pad(cam_coords, (1, 1, 1, 1), mode='replicate')  # (3, H+2, W+2)
+    # print(cam_coords_pad)
+    horizontal_vec = cam_coords_pad[:, 1:-1, 2:] - cam_coords_pad[:, 1:-1, :-2]  # (3, H, W)
+    vertical_vec =  cam_coords_pad[:, :-2, 1:-1] - cam_coords_pad[:, 2:, 1:-1]  # (3, H, W)
 
-    dx = cam_coords_padded[:, 1:-1, 2:] - cam_coords_padded[:, 1:-1, :-2]  # (3, H, W)
-    dy = cam_coords_padded[:, 2:, 1:-1] - cam_coords_padded[:, :-2, 1:-1]  # (3, H, W)
-
-    normal = torch.cross(dx, dy, dim=0)  # (3, H, W)
+    normal = torch.cross(vertical_vec, horizontal_vec, dim=0)  # (3, H, W)
     normal = F.normalize(normal, dim=0)
 
     # normal_np = normal.permute(1, 2, 0).cpu().numpy()  # (H, W, 3)
     # np.save('./output/normal_chk/normal.npy', normal_np)
 
-    sol  =normal.unsqueeze(0) #(1, 3, 480, 640)
-    # print(sol.shape)
-    return sol
+    pred_normal  =normal.unsqueeze(0) #(1, 3, 480, 640)
+    # print(pred_normal.shape)
+    return pred_normal
